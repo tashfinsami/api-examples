@@ -79,21 +79,5 @@ if ($path === "/logout" && $method === "POST") {
     ]);
 }
 
-/* ---------- ME (session-based user) ---------- */
-if ($path === "/me" && $_SERVER["REQUEST_METHOD"] === "GET") {
-
-    if (!isset($_SESSION["user_id"])) {
-        respond(["error" => "Not logged in"]);
-    }
-
-    $id = $_SESSION["user_id"];
-
-    $result = $conn->query("
-        SELECT id,name,email FROM users WHERE id=$id
-    ");
-
-    respond($result->fetch_assoc());
-}
-
 /* ---------- fallback ---------- */
 respond(["error" => "Route not found"]);
