@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Dashboard</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+
+        .box {
+            border: 1px solid #ccc;
+            padding: 12px;
+            margin: 10px 0;
+        }
+
+        input {
+            margin: 5px;
+            padding: 6px;
+        }
+
+        button {
+            margin: 5px;
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>My Dashboard</h2>
+
+<!-- ================= PROFILE ================= -->
+<div class="section">
+
+    <h3>Profile</h3>
+
+    <button onclick="loadMe()">Load Profile</button>
+
+    <div id="meBox" class="box"></div>
+
+</div>
+
+<hr>
+
+<!-- ================= UPDATE ================= -->
+<div class="section">
+
+    <h3>Update Profile</h3>
+
+    <div class="box">
+
+        <input id="up_name" placeholder="New Name"><br>
+        <input id="up_email" placeholder="New Email"><br>
+
+        <button onclick="updateMe()">Update</button>
+
+    </div>
+</div>
+
+<hr>
+
+<!-- ================= DELETE ================= -->
+<div class="section">
+
+    <h3>Delete Account</h3>
+
+    <div class="box">
+
+        <p>Danger zone: This will permanently delete your account.</p>
+
+        <button onclick="deleteMe()" style="background:red;color:white;">
+            Delete My Account
+        </button>
+
+    </div>
+</div>
+
+<hr>
+
+<!-- ================= USERS ================= -->
+<div class="section">
+
+    <h3>All Users</h3>
+
+    <button onclick="getAll()">Load Users</button>
+
+    <div id="list"></div>
+
+</div>
+
+<hr>
+
+<!-- ================= SEARCH ================= -->
+<div class="section">
+
+    <h3>Search by Email</h3>
+
+    <input id="searchEmail" placeholder="Enter email">
+    <button onclick="searchEmail()">Search</button>
+
+    <div id="emailBox"></div>
+
+</div>
+
+<!-- ================= LOGOUT ================= -->
+<div style="display:flex; justify-content:space-between; align-items:center;">
+    <button onclick="logout()" style="background:#111;color:#fff;padding:6px 12px;">
+        Logout
+    </button>
+</div>
+
+<script>
+
+const API = "profile.php";
+
+/* =====================
+   LOAD CURRENT USER
+===================== */
+function loadMe() {
+
+    fetch(API + "/me", {
+        method: "GET",
+        credentials: "include",
+        headers: { "Accept": "application/json" }
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.error) {
+            document.getElementById("meBox").innerHTML =
+                "<b>Not logged in</b>";
+            return;
+        }
+
+        document.getElementById("meBox").innerHTML = `
+            <b>ID:</b> ${data.id}<br>
+            <b>Name:</b> ${data.name}<br>
+            <b>Email:</b> ${data.email}
+        `;
+    });
+}
+
+/* =====================
+   UPDATE PROFILE
+===================== */
+function updateMe() {
+
+    let name = document.getElementById("up_name").value;
+    let email = document.getElementById("up_email").value;
+
+    fetch(API + "/me", {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name, email })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || data.error);
+        loadMe();
+    });
+}
+
+/* =====================
+   DELETE PROFILE
+===================== */
+function deleteMe() {
+
+    let confirmBox = confirm("Are you sure you want to delete your account?");
+
+    if (!confirmBox) return;
+
+    fetch(API + "/me", {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+        "Accept": "application/json"
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || data.error);
+        window.location.href = "index.html";
+    });
+}
+
+/* =====================
+   ALL USERS
+===================== */
+function getAll() {
+
+    fetch(API + "/users", {
+        method: "GET",
+        credentials: "include",
+        headers: { "Accept": "application/json" }
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        let html = "";
+
+        data.forEach(user => {
+            html += `
+                <div class="box">
+                    <b>ID:</b> ${user.id}<br>
+                    <b>Name:</b> ${user.name}<br>
+                    <b>Email:</b> ${user.email}
+                </div>
+            `;
+        });
+
+        document.getElementById("list").innerHTML = html;
+    });
+}
+
+/* =====================
+   SEARCH BY EMAIL
+===================== */
+function searchEmail() {
+
+    let email = document.getElementById("searchEmail").value;
+
+    fetch(API + "/users?email=" + encodeURIComponent(email), {
+        method: "GET",
+        credentials: "include",
+        headers: { "Accept": "application/json" }
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.error) {
+            document.getElementById("emailBox").innerHTML =
+                "<b>User not found</b>";
+            return;
+        }
+
+        document.getElementById("emailBox").innerHTML = `
+            <div class="box">
+                <b>ID:</b> ${data.id}<br>
+                <b>Name:</b> ${data.name}<br>
+                <b>Email:</b> ${data.email}
+            </div>
+        `;
+    });
+}
+
+/* =====================
+   LOGOUT
+===================== */
+function logout() {
+
+fetch("auth.php/logout", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+        "Accept": "application/json"
+    }
+})
+.then(async res => {
+
+    const text = await res.text();
+
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        return { message: "Logged out" };
+    }
+
+})
+.then(data => {
+
+    alert(data.message || "Logged out");
+
+    window.location.href = "index.html";
+})
+.catch(() => {
+    window.location.href = "index.html";
+});
+}
+
+/* =====================
+   LOGIN VERIFICATION
+===================== */
+window.onload = function () {
+
+    fetch(API + "/me", {
+        credentials: "include"
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.error) {
+            window.location.href = "auth.html";
+        }
+
+    })
+    .catch(() => {
+        window.location.href = "auth.html";
+    });
+
+};
+</script>
+
+</body>
+</html>
