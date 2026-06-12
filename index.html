@@ -1,195 +1,21 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>CRUD Frontend</title>
-    <style>
-        body { font-family: Arial; margin: 20px; }
-        input { margin: 5px; padding: 5px; }
-        button { margin: 5px; padding: 6px 10px; }
-        .box { margin-top: 10px; padding: 10px; border: 1px solid #ccc; }
-    </style>
-</head>
-
-<body>
-
-<h2>CREATE USER</h2>
-
-<input id="name" placeholder="Name">
-<input id="number" placeholder="Number">
-<input id="email" placeholder="Email">
-<button onclick="createUser()">UPLOAD</button>
-
-<hr>
-
-<h2>ALL USERS</h2>
-<button onclick="getUsers()">LOAD USERS</button>
-<div id="list"></div>
-
-<hr>
-
-<h2>SEARCH USER BY ID</h2>
-
-<input id="searchId" placeholder="Enter ID">
-<button onclick="getUserById()">SEARCH</button>
-
-<div id="singleUser"></div>
-
-<hr>
-
-<h2>UPDATE USER</h2>
-
-<input id="uid" placeholder="ID">
-<input id="uname" placeholder="New Name">
-<input id="unumber" placeholder="New Number">
-<input id="uemail" placeholder="New Email">
-<button onclick="updateUser()">UPDATE</button>
-
-<hr>
-
-<h2>DELETE USER</h2>
-
-<input id="did" placeholder="ID">
-<button onclick="deleteUser()">DELETE</button>
-
 <script>
 
-const API = "backend.php";
+const API = "profile.php";
 
-/* =====================
-   CREATE (POST)
-===================== */
-function createUser() {
+window.onload = function () {
 
-    fetch(API, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            name: document.getElementById("name").value,
-            number: document.getElementById("number").value,
-            email: document.getElementById("email").value
-        })
+    fetch(API+ "/me", {
+        credentials: "include"
     })
     .then(res => res.json())
     .then(data => {
-        alert(data.message || data.error);
-        getUsers();
-    });
-}
 
-/* =====================
-   READ ALL (GET)
-===================== */
-function getUsers() {
-
-    fetch(API, {
-        method: "GET",
-        headers: {
-            "Accept": "application/json"
+        if (data.error) {
+            window.location.href = "auth.html";
+        } else {
+            window.location.href = "profile.html";
         }
-    })
-    .then(res => res.json())
-    .then(data => {
-
-        let html = "";
-
-        data.data.forEach(user => {
-            html += `
-                <div class="box">
-                    <b>ID:</b> ${user.id} <br>
-                    <b>Name:</b> ${user.name} <br>
-                    <b>Number:</b> ${user.number} <br>
-                    <b>Email:</b> ${user.email}
-                </div>
-            `;
-        });
-
-        document.getElementById("list").innerHTML = html;
     });
-}
 
-/* =====================
-   SEARCH BY ID (GET ?id=)
-===================== */
-function getUserById() {
-
-    let id = document.getElementById("searchId").value;
-
-    fetch(API + "?id=" + id, {
-        method: "GET",
-        headers: {
-            "Accept": "application/json"
-        }
-    })
-    .then(res => res.json())
-    .then(data => {
-
-        if (!data.data) {
-            document.getElementById("singleUser").innerHTML =
-                "<p>User not found</p>";
-            return;
-        }
-
-        let user = data.data;
-
-        document.getElementById("singleUser").innerHTML = `
-            <div class="box">
-                <b>ID:</b> ${user.id} <br>
-                <b>Name:</b> ${user.name} <br>
-                <b>Number:</b> ${user.number} <br>
-                <b>Email:</b> ${user.email}
-            </div>
-        `;
-    });
-}
-
-/* =====================
-   UPDATE (PUT)
-===================== */
-function updateUser() {
-
-    fetch(API, {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            id: document.getElementById("uid").value,
-            name: document.getElementById("uname").value,
-            number: document.getElementById("unumber").value,
-            email: document.getElementById("uemail").value
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message || data.error);
-        getUsers();
-    });
-}
-
-/* =====================
-   DELETE (DELETE)
-===================== */
-function deleteUser() {
-
-    fetch(API, {
-        method: "DELETE",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            id: document.getElementById("did").value
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message || data.error);
-        getUsers();
-    });
-}
-
+};
 </script>
-
-</body>
-</html>
