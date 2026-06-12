@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth System</title>
+    <style>
+        body { font-family: Arial; margin: 30px; }
+        input { display:block; margin:8px 0; padding:6px; }
+        button { padding:8px 12px; margin:5px 0; }
+        .box { margin-top:15px; padding:10px; border:1px solid #ccc; }
+    </style>
+</head>
+<body>
+
+<h2>Signup</h2>
+
+<input id="su_name" placeholder="Name">
+<input id="su_email" placeholder="Email">
+<input id="su_password" placeholder="Password">
+<button onclick="signup()">Signup</button>
+
+<hr>
+
+<h2>Login</h2>
+
+<input id="li_email" placeholder="Email">
+<input id="li_password" placeholder="Password">
+<button onclick="login()">Login</button>
+
+<hr>
+
+<h3>Response</h3>
+<div id="output" class="box"></div>
+
+<script>
+
+/* =========================
+   SIGNUP
+========================= */
+function signup() {
+
+    fetch("auth.php/signup", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        },
+        body: JSON.stringify({
+            name: document.getElementById("su_name").value,
+            email: document.getElementById("su_email").value,
+            password: document.getElementById("su_password").value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("output").innerHTML =
+            JSON.stringify(data, null, 2);
+    });
+}
+
+/* =========================
+   LOGIN
+========================= */
+function login() {
+
+    fetch("auth.php/login", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        },
+        body: JSON.stringify({
+            email: document.getElementById("li_email").value,
+            password: document.getElementById("li_password").value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("output").innerHTML =
+            JSON.stringify(data, null, 2);
+
+        if (data.message === "Login successful") {
+            console.log("User logged in, session started");
+            window.location.href = "profile.html";
+        }
+    });
+}
+
+</script>
+
+</body>
+</html>
