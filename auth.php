@@ -1,9 +1,14 @@
 <?php
 
-session_start();
 header("Content-Type: application/json");
 
 require_once "db.php";
+require_once "vendor/autoload.php";
+
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+
+$secret = file_get_contents("secret.key");
 
 function respond($data) {
     echo json_encode($data);
@@ -11,24 +16,21 @@ function respond($data) {
 }
 
 /* =========================
-   GET CLEAN PATH
+   GET PATH
 ========================= */
 $method = $_SERVER["REQUEST_METHOD"];
-
 $uri = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
-
 $script = $_SERVER["SCRIPT_NAME"];
-
 $path = str_replace($script, "", $uri);
 
-/* get JSON body */
+/* =========================
+   BODY
+========================= */
 $data = json_decode(file_get_contents("php://input"), true);
 
 /* =========================
-   ROUTES
+   SIGNUP (PUBLIC)
 ========================= */
-
-/* ---------- SIGNUP ---------- */
 if ($path === "/signup" && $method === "POST") {
 
     $name = $data["name"];
@@ -43,7 +45,9 @@ if ($path === "/signup" && $method === "POST") {
     respond(["message" => "Signup successful"]);
 }
 
-/* ---------- SIGNIN ---------- */
+/* =========================
+   LOGIN (ISSUE JWT)
+========================= */
 if ($path === "/login" && $method === "POST") {
 
     $email = $data["email"];
@@ -59,25 +63,21 @@ if ($path === "/login" && $method === "POST") {
         respond(["error" => "Invalid credentials"]);
     }
 
-    $_SESSION["user_id"] = $user["id"];
+    $payload = [
+        "user_id" => $user["id"],
+        "iat" => time(),
+        "exp" => time() + 3600
+    ];
+
+    $token = JWT::encode($payload, $secret, "HS256");
 
     respond([
         "message" => "Login successful",
-        "user_id" => $user["id"]
+        "token" => $token
     ]);
 }
 
-/* ---------- LOGOUT ---------- */
-if ($path === "/logout" && $method === "POST") {
-
-    session_start();
-
-    session_destroy();
-
-    respond([
-        "message" => "Logged out"
-    ]);
-}
-
-/* ---------- fallback ---------- */
+/* =========================
+   fallback
+========================= */
 respond(["error" => "Route not found"]);
