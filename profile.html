@@ -32,106 +32,97 @@
 
 <h2>My Dashboard</h2>
 
-<!-- ================= PROFILE ================= -->
 <div class="section">
-
     <h3>Profile</h3>
-
     <button onclick="loadMe()">Load Profile</button>
-
     <div id="meBox" class="box"></div>
-
 </div>
 
 <hr>
 
-<!-- ================= UPDATE ================= -->
 <div class="section">
-
     <h3>Update Profile</h3>
 
     <div class="box">
-
         <input id="up_name" placeholder="New Name"><br>
         <input id="up_email" placeholder="New Email"><br>
-
         <button onclick="updateMe()">Update</button>
-
     </div>
 </div>
 
 <hr>
 
-<!-- ================= DELETE ================= -->
 <div class="section">
-
     <h3>Delete Account</h3>
 
     <div class="box">
-
-        <p>Danger zone: This will permanently delete your account.</p>
-
+        <p>Danger zone</p>
         <button onclick="deleteMe()" style="background:red;color:white;">
             Delete My Account
         </button>
-
     </div>
 </div>
 
 <hr>
 
-<!-- ================= USERS ================= -->
 <div class="section">
-
     <h3>All Users</h3>
-
     <button onclick="getAll()">Load Users</button>
-
     <div id="list"></div>
-
 </div>
 
 <hr>
 
-<!-- ================= SEARCH ================= -->
 <div class="section">
-
     <h3>Search by Email</h3>
 
     <input id="searchEmail" placeholder="Enter email">
     <button onclick="searchEmail()">Search</button>
 
     <div id="emailBox"></div>
-
 </div>
 
-<!-- ================= LOGOUT ================= -->
-<div style="display:flex; justify-content:space-between; align-items:center;">
-    <button onclick="logout()" style="background:#111;color:#fff;padding:6px 12px;">
-        Logout
-    </button>
-</div>
+<hr>
+
+<button onclick="logout()" style="background:#111;color:#fff;">
+    Logout
+</button>
 
 <script>
 
 const API = "profile.php";
 
 /* =====================
-   LOAD CURRENT USER
+   GET TOKEN
+===================== */
+function getToken() {
+    return localStorage.getItem("token");
+}
+
+/* =====================
+   AUTH HEADER
+===================== */
+function authHeaders() {
+    return {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + getToken()
+    };
+}
+
+/* =====================
+   LOAD PROFILE
 ===================== */
 function loadMe() {
 
     fetch(API + "/me", {
         method: "GET",
-        credentials: "include",
-        headers: { "Accept": "application/json" }
+        headers: authHeaders()
     })
     .then(res => res.json())
     .then(data => {
 
         if (data.error) {
-            document.getElementById("meBox").innerHTML =
-                "<b>Not logged in</b>";
+            document.getElementById("meBox").innerHTML = "<b>Not logged in</b>";
             return;
         }
 
@@ -153,10 +144,7 @@ function updateMe() {
 
     fetch(API + "/me", {
         method: "PUT",
-        credentials: "include",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: authHeaders(),
         body: JSON.stringify({ name, email })
     })
     .then(res => res.json())
@@ -171,21 +159,16 @@ function updateMe() {
 ===================== */
 function deleteMe() {
 
-    let confirmBox = confirm("Are you sure you want to delete your account?");
-
-    if (!confirmBox) return;
+    if (!confirm("Are you sure?")) return;
 
     fetch(API + "/me", {
         method: "DELETE",
-        credentials: "include",
-        headers: {
-        "Accept": "application/json"
-        }
+        headers: authHeaders()
     })
     .then(res => res.json())
     .then(data => {
         alert(data.message || data.error);
-        window.location.href = "index.html";
+        logout();
     });
 }
 
@@ -196,8 +179,7 @@ function getAll() {
 
     fetch(API + "/users", {
         method: "GET",
-        credentials: "include",
-        headers: { "Accept": "application/json" }
+        headers: authHeaders()
     })
     .then(res => res.json())
     .then(data => {
@@ -219,7 +201,7 @@ function getAll() {
 }
 
 /* =====================
-   SEARCH BY EMAIL
+   SEARCH EMAIL
 ===================== */
 function searchEmail() {
 
@@ -227,15 +209,13 @@ function searchEmail() {
 
     fetch(API + "/users?email=" + encodeURIComponent(email), {
         method: "GET",
-        credentials: "include",
-        headers: { "Accept": "application/json" }
+        headers: authHeaders()
     })
     .then(res => res.json())
     .then(data => {
 
         if (data.error) {
-            document.getElementById("emailBox").innerHTML =
-                "<b>User not found</b>";
+            document.getElementById("emailBox").innerHTML = "<b>User not found</b>";
             return;
         }
 
@@ -250,60 +230,26 @@ function searchEmail() {
 }
 
 /* =====================
-   LOGOUT
+   LOGOUT (JWT STYLE)
 ===================== */
 function logout() {
-
-fetch("auth.php/logout", {
-    method: "POST",
-    credentials: "include",
-    headers: {
-        "Accept": "application/json"
-    }
-})
-.then(async res => {
-
-    const text = await res.text();
-
-    try {
-        return JSON.parse(text);
-    } catch (e) {
-        return { message: "Logged out" };
-    }
-
-})
-.then(data => {
-
-    alert(data.message || "Logged out");
-
+    localStorage.removeItem("token");
     window.location.href = "index.html";
-})
-.catch(() => {
-    window.location.href = "index.html";
-});
 }
 
 /* =====================
-   LOGIN VERIFICATION
+   AUTO CHECK LOGIN
 ===================== */
 window.onload = function () {
 
-    fetch(API + "/me", {
-        credentials: "include"
-    })
-    .then(res => res.json())
-    .then(data => {
+    if (!getToken()) {
+        window.location.href = "index.html";
+        return;
+    }
 
-        if (data.error) {
-            window.location.href = "auth.html";
-        }
-
-    })
-    .catch(() => {
-        window.location.href = "auth.html";
-    });
-
+    loadMe();
 };
+
 </script>
 
 </body>

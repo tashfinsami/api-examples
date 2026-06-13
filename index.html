@@ -1,21 +1,37 @@
 <script>
 
-const API = "profile.php";
-
-window.onload = function () {
-
-    fetch(API+ "/me", {
-        credentials: "include"
-    })
-    .then(res => res.json())
-    .then(data => {
-
-        if (data.error) {
+    const API = "profile.php";
+    
+    function getToken() {
+        return localStorage.getItem("token");
+    }
+    
+    window.onload = function () {
+    
+        const token = getToken();
+    
+        if (!token) {
             window.location.href = "auth.html";
-        } else {
-            window.location.href = "profile.html";
+            return;
         }
-    });
-
-};
+    
+        fetch(API + "/me", {
+            method: "GET",
+            headers: {
+                "Authorization": "Bearer " + getToken()
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+    
+            if (data.error) {
+                localStorage.removeItem("token");
+                window.location.href = "auth.html";
+                return;
+            }
+    
+            window.location.href = "profile.html";
+        });
+    };
+    
 </script>
