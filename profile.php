@@ -1,33 +1,57 @@
 <?php
 
-session_start();
 header("Content-Type: application/json");
 
 require_once "db.php";
+require_once "vendor/autoload.php";
+
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+
+$secret = file_get_contents("secret.key");
 
 function respond($data) {
     echo json_encode($data);
     exit;
 }
 
+/* =========================
+   GET PATH
+========================= */
 $method = $_SERVER["REQUEST_METHOD"];
-
 $uri = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
-
 $script = $_SERVER["SCRIPT_NAME"];
-
 $path = str_replace($script, "", $uri);
+
+/* =========================
+   GET TOKEN + VERIFY
+   (used by protected routes)
+========================= */
+function getUserId($secret) {
+
+    $headers = getallheaders();
+    $auth = $headers["Authorization"] ?? "";
+
+    if (!$auth) {
+        respond(["error" => "Token missing"]);
+    }
+
+    $token = str_replace("Bearer ", "", $auth);
+
+    try {
+        $decoded = JWT::decode($token, new Key($secret, "HS256"));
+        return $decoded->user_id;
+    } catch (Exception $e) {
+        respond(["error" => "Invalid or expired token"]);
+    }
+}
 
 /* ======================================================
    GET /me
 ====================================================== */
 if ($method === "GET" && $path === "/me") {
 
-    if (!isset($_SESSION["user_id"])) {
-        respond(["error" => "Not logged in"]);
-    }
-
-    $id = $_SESSION["user_id"];
+    $id = getUserId($secret);
 
     $result = $conn->query("
         SELECT id, name, email
@@ -39,9 +63,11 @@ if ($method === "GET" && $path === "/me") {
 }
 
 /* ======================================================
-   GET /users (all OR search by email)
+   GET /users (all or search by email)
 ====================================================== */
 elseif ($method === "GET" && $path === "/users") {
+
+    $id_dump = getUserId($secret);
 
     /* search by email */
     if (isset($_GET["email"])) {
@@ -76,17 +102,14 @@ elseif ($method === "GET" && $path === "/users") {
 }
 
 /* ======================================================
-   PUT /me (update self)
+   PUT /me
 ====================================================== */
 elseif ($method === "PUT" && $path === "/me") {
 
-    if (!isset($_SESSION["user_id"])) {
-        respond(["error" => "Not logged in"]);
-    }
+    $id = getUserId($secret);
 
     $input = json_decode(file_get_contents("php://input"), true);
 
-    $id = $_SESSION["user_id"];
     $name = $input["name"];
     $email = $input["email"];
 
@@ -104,15 +127,9 @@ elseif ($method === "PUT" && $path === "/me") {
 ====================================================== */
 elseif ($method === "DELETE" && $path === "/me") {
 
-    if (!isset($_SESSION["user_id"])) {
-        respond(["error" => "Not logged in"]);
-    }
-
-    $id = $_SESSION["user_id"];
+    $id = getUserId($secret);
 
     $conn->query("DELETE FROM users WHERE id=$id");
-
-    session_destroy();
 
     respond(["message" => "Account deleted"]);
 }
