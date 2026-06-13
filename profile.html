@@ -67,7 +67,10 @@
 
 <div class="section">
     <h3>All Users</h3>
+
+    <input id="pageInput" type="number" placeholder="Page number (at least 1)">
     <button onclick="getAll()">Load Users</button>
+
     <div id="list"></div>
 </div>
 
@@ -76,7 +79,7 @@
 <div class="section">
     <h3>Search by Email</h3>
 
-    <input id="searchEmail" placeholder="Enter email">
+    <input id="searchEmail" placeholder="Email">
     <button onclick="searchEmail()">Search</button>
 
     <div id="emailBox"></div>
@@ -177,27 +180,44 @@ function deleteMe() {
 ===================== */
 function getAll() {
 
-    fetch(API + "/users", {
-        method: "GET",
-        headers: authHeaders()
-    })
-    .then(res => res.json())
-    .then(data => {
+// get page from input
+let page = document.getElementById("pageInput").value;
+//set limit
+let limit = 5;
 
-        let html = "";
+// frontend check
+if (!page || page < 1) {
+    document.getElementById("list").innerHTML =
+        "Page must be a valid number";
+    return;
+}
 
-        data.forEach(user => {
-            html += `
-                <div class="box">
-                    <b>ID:</b> ${user.id}<br>
-                    <b>Name:</b> ${user.name}<br>
-                    <b>Email:</b> ${user.email}
-                </div>
-            `;
-        });
+fetch(API + "/users?page=" + page + "&limit=" + limit, {
+    method: "GET",
+    headers: authHeaders()
+})
+.then(res => res.json())
+.then(data => {
 
-        document.getElementById("list").innerHTML = html;
+    if (data.error) {
+        document.getElementById("list").innerHTML = data.error;
+        return;
+    }
+
+    let html = "";
+
+    data.forEach(user => {
+        html += `
+            <div class="box">
+                <b>ID:</b> ${user.id}<br>
+                <b>Name:</b> ${user.name}<br>
+                <b>Email:</b> ${user.email}
+            </div>
+        `;
     });
+
+    document.getElementById("list").innerHTML = html;
+});
 }
 
 /* =====================

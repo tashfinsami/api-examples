@@ -67,7 +67,7 @@ if ($method === "GET" && $path === "/me") {
 ====================================================== */
 elseif ($method === "GET" && $path === "/users") {
 
-    $id_dump = getUserId($secret);
+    $id_dump = getUserId($secret); //for safety check only
 
     /* search by email */
     if (isset($_GET["email"])) {
@@ -91,7 +91,31 @@ elseif ($method === "GET" && $path === "/users") {
     }
 
     /* all users */
-    $result = $conn->query("SELECT id, name, email FROM users");
+    $page = isset($_GET["page"]) ? (int)$_GET["page"] : 1;
+    $limit = isset($_GET["limit"]) ? (int)$_GET["limit"] : 10;
+
+    $page = max(1, $page);
+    $limit = max(1, min(50, $limit));
+
+    $offset = ($page - 1) * $limit;
+
+    /* get total users */
+    $totalResult = $conn->query("SELECT COUNT(*) as total FROM users");
+    $totalRow = $totalResult->fetch_assoc();
+    $total = (int)$totalRow["total"];
+
+    $totalPages = max(1, ceil($total / $limit));
+
+    /* backend check */
+    if ($page > $totalPages) {
+        respond(["error" => "Page out of range",]);
+    }
+
+    $result = $conn->query("
+        SELECT id, name, email
+        FROM users
+        LIMIT $limit OFFSET $offset
+    ");
 
     $users = [];
     while ($row = $result->fetch_assoc()) {
